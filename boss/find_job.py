@@ -4,39 +4,14 @@ from selenium import webdriver
 from scrapy import Selector
 import pymysql.cursors
 import time
-import re
 from datetime import datetime
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.options import Options
 from peewee import *
 
+
 db = MySQLDatabase('spider', host='ml.j1ang.xyz', port=3306,
                    user='j1ang', password='123456')
-
-
-class BaseModel(Model):
-    class Meta:
-        database = db
-        table_name = 'spider'
-
-
-class Data(BaseModel):
-    url = TextField(default='')
-    content = TextField(default='')
-    primary = TextField(default='')
-    needs = TextField(default='')
-    place = TextField(default='')
-    company = TextField(default='')
-    welfare = TextField(default='')
-    create_data = DateField(formats=['%d-%b-%Y %H:%M:S%'])
-
-
-connection = pymysql.connect(host='ml.j1ang.xyz',
-                             user='j1ang',
-                             password='123456',
-                             database='spider',
-                             charset='utf8mb4',
-                             cursorclass=pymysql.cursors.DictCursor)
 
 
 def getStrName():
@@ -49,7 +24,7 @@ def getStrName():
 
 
 def getStrSearch():
-    search = 'android'
+    search = 'ios'
     if search.isspace():
         search = input('\n输入要搜索的职位:')
         return search
@@ -60,6 +35,29 @@ def getStrSearch():
 cityname = getStrName()
 
 search = getStrSearch()
+
+
+def make_table_name(model_class):
+    model_name = model_class.__name__
+    return model_name.lower() + '_' + search
+
+
+class BaseModel(Model):
+    class Meta:
+        database = db
+        table_function = make_table_name
+
+
+class Boss(BaseModel):
+    url = TextField(default='')
+    content = TextField(default='')
+    primary = TextField(default='')
+    needs = TextField(default='')
+    place = TextField(default='')
+    company = TextField(default='')
+    welfare = TextField(default='')
+    create_data = DateTimeField(default=datetime.now(), verbose_name="添加时间")
+
 
 
 def get_boss_info():
@@ -88,27 +86,16 @@ def xpath_get_data(sel, xpath):
         return ''
 
 
-def table_exists(con, name):
-    sql = 'show tables;'
-    con.execute(sql)
-    tables = [con.fetchall()]
-    table_list = re.findall('(\'.*?\')', str(tables))
-    table_list = [re.sub("'", '', each) for each in table_list]
-    if table_name in table_list:
-        return 1  # 存在返回1
-    else:
-        return 0  # 不存在返回0
+# 创建表
+def create_table(table):
+    if not table.table_exists():
+        table.create_table()
+# 删除表
 
 
-def insert_data():
-    sql = "INSERT INTO `data` (`url`, `content`, `primary`,`needs`,`place`,`company`,`welfare`) VALUES (%s, %s, " \
-        "%s, %s, %s, %s, %s)"
-    for i in tag:
-        cursor.execute(sql, (i[0], i[1], i[2], i[3], i[4], i[5], i[6]))
-        connection.commit()
-        cursor.close()
-        end_time = time.time()
-        print('runtime:{}'.format(end_time - begin_time))
+def drop_table(table):
+    if table.table_exists():
+        table.drop_table()
 
 
 def create_data():
@@ -117,18 +104,19 @@ def create_data():
     insert_data()
 
 
-# 不显示浏览器
-chrome_options = Options()
-chrome_options.add_argument("--headless")
-chrome_options.add_argument(
-    'user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36')
 if __name__ == '__main__':
     url_temp = get_boss_info()
     begin_time = time.time()
-    db.create_tables([Data])
+    # db.create_tables([Data])
+    create_table(Boss)
     url_temp_head = 'https://www.zhipin.com'
     tag = []
     StopFlag = True
+    # 不显示浏览器
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument(
+        'user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36')
     browser = webdriver.Chrome(options=chrome_options)
     i = 1
     while StopFlag:
@@ -202,7 +190,7 @@ if __name__ == '__main__':
         for n in range(0, len(url)):
             # tag.append([url_temp_head + url[n], content[n], primary[n],
             #            needs[n], place[n], company[n], welfare[n]])
-            tag.append(Data(url=url_temp_head + url[n], content=content[n], primary=primary[n], needs=needs[n], place=place[n],
+            tag.append(Boss(url=url_temp_head + url[n], content=content[n], primary=primary[n], needs=needs[n], place=place[n],
                        company=company[n], welfare=welfare[n], create_data=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
         try:
             click_ele = browser.find_element_by_xpath('//*[@class="next"]')
@@ -215,8 +203,8 @@ if __name__ == '__main__':
         i += 1
     browser.close()
     with db.atomic():
-        Data.delete().execute()
-        Data.bulk_create(tag)
+        Boss.delete().execute()
+        Boss.bulk_create(tag)
         end_time = time.time()
         print('runtime:{}'.format(end_time - begin_time))
 
