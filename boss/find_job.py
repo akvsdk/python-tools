@@ -24,7 +24,7 @@ def getStrName():
 
 
 def getStrSearch():
-    search = 'ios'
+    search = '前端'
     if search.isspace():
         search = input('\n输入要搜索的职位:')
         return search
@@ -34,9 +34,9 @@ def getStrSearch():
 
 cityname = getStrName()
 
-search = getStrSearch()
+search = ''
 
-
+# 动态生成表名
 def make_table_name(model_class):
     model_name = model_class.__name__
     return model_name.lower() + '_' + search
@@ -47,7 +47,7 @@ class BaseModel(Model):
         database = db
         table_function = make_table_name
 
-
+# 数据库实体
 class Boss(BaseModel):
     url = TextField(default='')
     content = TextField(default='')
@@ -59,7 +59,7 @@ class Boss(BaseModel):
     create_data = DateTimeField(default=datetime.now(), verbose_name="添加时间")
 
 
-
+# 获取直聘访问地址
 def get_boss_info():
     city_url = 'https://www.zhipin.com/wapi/zpgeek/common/data/citysites.json'
     res = requests.get(city_url).text
@@ -71,9 +71,9 @@ def get_boss_info():
         name, code = i
         data_dict[name] = code
         print(i[0] + '\t', end='')
-    print(data_dict)
-    print('\n'+cityname)
-    print('\n'+data_dict[cityname])
+    # print(data_dict)
+    # print('\n'+cityname)
+    # print('\n'+data_dict[cityname])
     url_temp = 'https://www.zhipin.com/c{}/?query={}'.format(
         data_dict[cityname], search)
     return url_temp
@@ -91,20 +91,15 @@ def create_table(table):
     if not table.table_exists():
         table.create_table()
 # 删除表
-
-
 def drop_table(table):
     if table.table_exists():
         table.drop_table()
 
 
-def create_data():
-    sql = "CREATE DATABASE `spider` CHARACTER SET 'utf8mb4';"
-    cursor.execute(sql)
-    insert_data()
-
 
 if __name__ == '__main__':
+    if len(search)==0:
+        search = input('\n输入要搜索的职位:')
     url_temp = get_boss_info()
     begin_time = time.time()
     # db.create_tables([Data])
@@ -187,6 +182,9 @@ if __name__ == '__main__':
                                    '//*[@id="main"]/div/div[2]/ul/li[{}]/div/div[1]/div[2]/div/h3/a/text()'.format(k)))
                 welfare.append(
                     xpath_get_data(sel, '//*[@id="main"]/div/div[2]/ul/li[{}]/div/div[2]/div[2]/text()'.format(k)))
+        if StopFlag == False:
+            print('complete {}'.format(i))
+            break
         for n in range(0, len(url)):
             # tag.append([url_temp_head + url[n], content[n], primary[n],
             #            needs[n], place[n], company[n], welfare[n]])
