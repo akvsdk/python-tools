@@ -24,7 +24,7 @@ def getStrName():
 
 
 def getStrSearch():
-    search = '前端'
+    search = 'Android'
     if search.isspace():
         search = input('\n输入要搜索的职位:')
         return search
@@ -90,6 +90,8 @@ def xpath_get_data(sel, xpath):
 def create_table(table):
     if not table.table_exists():
         table.create_table()
+
+
 # 删除表
 def drop_table(table):
     if table.table_exists():
@@ -98,7 +100,7 @@ def drop_table(table):
 
 
 if __name__ == '__main__':
-    if len(search)==0:
+    if len(search) == 0:
         search = input('\n输入要搜索的职位:')
     url_temp = get_boss_info()
     begin_time = time.time()
@@ -188,8 +190,10 @@ if __name__ == '__main__':
         for n in range(0, len(url)):
             # tag.append([url_temp_head + url[n], content[n], primary[n],
             #            needs[n], place[n], company[n], welfare[n]])
-            tag.append(Boss(url=url_temp_head + url[n], content=content[n], primary=primary[n], needs=needs[n], place=place[n],
-                       company=company[n], welfare=welfare[n], create_data=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
+            tag.append(
+                Boss(url=url_temp_head + url[n], content=content[n], primary=primary[n], needs=needs[n], place=place[n],
+                     company=company[n], welfare=welfare[n],
+                     create_data=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
         try:
             click_ele = browser.find_element_by_xpath('//*[@class="next"]')
             click_ele.click()

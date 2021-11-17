@@ -17,14 +17,14 @@ city_url = 'https://www.zhipin.com/wapi/zpgeek/common/data/citysites.json'
 # 搜索地址数组
 data_dict = {}
 # 搜索的默认地址
-name = '重庆'
+name = '福州'
 # 搜索的默认职业
-search = 'Java'
+search = 'Android'
 # 防止检测生成的cookies
 cookies = ''
 # 爬出数据
 source = []
-#爬取开始时间
+# 爬取开始时间
 begin_time = time.time()
 
 # 前置城市查询
@@ -70,21 +70,21 @@ def getCookie():
 
 # 前置职位获取
 # def findCitySearch():
-    # if len(search)==0:
-    #     return input('\n输入要搜索的职位:')
-    # else:
-    #     return search
+# if len(search)==0:
+#     return input('\n输入要搜索的职位:')
+# else:
+#     return search
 
 
 # 职位搜索
 # def findCitySearch():
-    # if len(search)==0:
-    #     return input('\n输入要搜索的职位:')
-    # else:
-    #     return search
+# if len(search)==0:
+#     return input('\n输入要搜索的职位:')
+# else:
+#     return search
 
 
-#生成本地Cookie
+# 生成本地Cookie
 # class getCookie:
 #     def main(self, url):
 #         option = webdriver.ChromeOptions()
@@ -131,7 +131,7 @@ def openWebGetData():
     id = 1
     url_temp_head = 'https://www.zhipin.com'
     StopFlag = True
-    browser = webdriver.Chrome(options=chrome_options)
+    browser = webdriver.Chrome(options=chrome_options, executable_path="./chromedriver")
     browser.implicitly_wait(10)
     i = 1
     while StopFlag:
@@ -176,7 +176,7 @@ def openWebGetData():
                 welfare = xpath_get_data(
                     sel, '//*[@id="main"]/div/div[3]/ul/li[{}]/div/div[2]/div[2]/text()'.format(k))
                 source.append([url_temp_head + url, content, primary,
-                           needs, place, company, welfare])
+                               needs, place, company, welfare])
 
         else:
             for k in range(1, 31):
@@ -207,7 +207,7 @@ def openWebGetData():
                 welfare = xpath_get_data(
                     sel, '//*[@id="main"]/div/div[2]/ul/li[{}]/div/div[2]/div[2]/text()'.format(k))
                 source.append([url_temp_head + url, content, primary,
-                           needs, place, company, welfare])
+                               needs, place, company, welfare])
         if StopFlag == False:
             print('complete {}'.format(i))
             break
@@ -221,21 +221,21 @@ def openWebGetData():
             print('complete {}'.format(i))
         i += 1
     browser.close()
-    
+
 # 生成最后数据
 def writeDataToDb():
     df = pd.DataFrame(data=source, columns=[
-                      '网址', '职位', '薪水', '需求', '地点', '公司', '福利'])
+        '网址', '职位', '薪水', '需求', '地点', '公司', '福利'])
     df = df.set_index('网址')
-    df.to_csv('{}_{}_{}.csv'.format(name, search, time. strftime(
+    df.to_csv('{}_{}_{}.csv'.format(name, search, time.strftime(
         "%Y-%m-%d", time.localtime())), index=True, encoding='utf_8_sig')
     end_time = time.time()
     print('runtime:{}'.format(end_time - begin_time))
-    
+
 
 if __name__ == '__main__':
     findCityData()
     getCookie()
     openWebGetData()
     writeDataToDb()
-    
+

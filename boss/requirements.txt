@@ -1,5 +1,6 @@
-peewee==3.14.4
-PyMySQL==1.0.2
-Scrapy==2.5.0
+pandas==1.2.4
 requests==2.25.1
-selenium==3.141.0
+peewee==3.14.4
+pymysql==1.0.2
+scrapy==2.5.1
+selenium==4.0.0
