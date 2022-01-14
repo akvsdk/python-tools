@@ -1,0 +1,35 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\*\Shell\ApkHelper]
+
+"MUIVerb"="APK Helper"
+
+"SubCommands"=""
+
+"Position"="Center"
+
+[HKEY_CLASSES_ROOT\*\shell\ApkHelper\Shell]
+
+[HKEY_CLASSES_ROOT\*\shell\ApkHelper\Shell\InstallR]
+
+@="adb install -r"
+
+[HKEY_CLASSES_ROOT\*\shell\ApkHelper\Shell\InstallR\command]
+
+@="PowerShell -noexit adb install -r \"%1\" "
+
+[HKEY_CLASSES_ROOT\*\shell\ApkHelper\Shell\InstallT]
+
+@="adb install -t"
+
+[HKEY_CLASSES_ROOT\*\shell\ApkHelper\Shell\InstallT\command]
+
+@="PowerShell -noexit adb install -r -t \"%1\" "
+
+[HKEY_CLASSES_ROOT\*\shell\ApkHelper\Shell\SignNew]
+
+@="keytool"
+
+[HKEY_CLASSES_ROOT\*\shell\ApkHelper\Shell\SignNew\command]
+
+@="PowerShell -noexit keytool -printcert -jarfile  \"%1\"  "

@@ -9,7 +9,7 @@ def dex2smail(path):
     makeDir(out_path)
     for file in path.glob('*.dex'):
         # sh = f'jadx -j 1 -r -d {out_path} {path}\\{file}'
-        sh = f'java -jar /Users/j1ang/Documents/code/hook/baksmali-2.4.0.jar d {file} -o {out_path}'
+        sh = f'java -jar /Users/j1ang/Document`s/code/hook/baksmali-2.4.0.jar d {file} -o {out_path}'
         print(sh)
         os.system(sh)
 
@@ -111,12 +111,12 @@ def makeDir(path):
 
 
 # dex 文件夹
-package = '/Users/j1ang/Documents/apk/com.rumtel.mobiletv'
+package = '/Users/j1ang/Documents/apk/com.cleargroup.magic.cleara'
 # smil 生成文件夹
 path_main = package
 path_new = package + '/smali_classes'
 # 单文件夹最多方法数
-archivesCount = 5000
+archivesCount = 7000
 
 if __name__ == '__main__':
     dex2smail(path_main)
