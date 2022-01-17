@@ -1,15 +1,10 @@
 import json
 from datetime import datetime
-
 import requests
+from flask import Flask
 from loguru import logger
 
 holiday_url = "https://api.apihubs.cn/holiday/get?field=year,month,date,holiday&year=2022&holiday_today=1&holiday_legal=1&order_by=1&cn=1&size=31"
-
-# 节日锚点
-mine_list = [
-    {"老婆生日": "2022-11-26"},
-]
 
 
 def get_holiday():
@@ -56,26 +51,66 @@ def get_tg():
         return False
 
 
-def get_weather():
+# def get_weather():
+#     """
+#     获取天气预报
+#     :return: str or false
+#     """
+#     url = f"http://apis.juhe.cn/simpleWeather/query"
+#     params = {
+#         'city': '重庆',
+#         'key': '7612ddda2313a41481327cbef5261b46',
+#     }
+#     try:
+#         res = requests.get(url=url, params=params).json()
+#         now_str = datetime.datetime.now().strftime('%Y-%m-%d')
+#         weather_content = f"""【摸鱼办公室】\n今天是 {now_str} 星期 {datetime.datetime.now().weekday() + 1}\n{res['result']['city']} 当前天气 {res['result']['realtime']['info']} {res['result']['realtime']['temperature']}摄氏度\n早上好，摸鱼人！上班点快到了，收拾收拾，该吃饭吃饭，该溜达溜达，该上厕所上厕所。别闲着\n"""
+#         return weather_content
+#     except:
+#         return False
+
+
+def date_conversion(year, month, day):
     """
-    获取天气预报
-    :return: str or false
+    农历转新历
+    :return: str
     """
-    url = f"http://apis.juhe.cn/simpleWeather/query"
+    url = f"https://www.iamwawa.cn/nongli/api"
     params = {
-        'city': '重庆',
-        'key': '7612ddda2313a41481327cbef5261b46',
+        'year': year,
+        'month': month,
+        'day': day,
+        'type': 'lunar',
     }
     try:
-        res = requests.get(url=url, params=params).json()
-        now_str = datetime.datetime.now().strftime('%Y-%m-%d')
-        weather_content = f"""【摸鱼办公室】\n今天是 {now_str} 星期 {datetime.datetime.now().weekday() + 1}\n{res['result']['city']} 当前天气 {res['result']['realtime']['info']} {res['result']['realtime']['temperature']}摄氏度\n早上好，摸鱼人！上班点快到了，收拾收拾，该吃饭吃饭，该溜达溜达，该上厕所上厕所。别闲着\n"""
-        return weather_content
+        user_agent = (
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.1 Safari/537.36')
+        headers = {'user-agent': user_agent}
+        res = requests.get(url=url, params=params, headers=headers).json()
+        # logger.info(res)
+        dt = datetime.strptime(res['data']['solar'], '%Y年%m月%d日')
+        return dt.strftime('%Y-%m-%d')
     except:
         return False
 
 
-if __name__ == '__main__':
+# 节日锚点
+mine_list = [
+    {"老婆生日": date_conversion(datetime.now().year, 11, 3)},
+    {"结婚纪念日": date_conversion(datetime.now().year - 1 if datetime.now().month < 2 else datetime.now().year, 12, 28)},
+    {"儿童节": date_conversion(datetime.now().year, 6, 2)},
+    # {"老婆生日": "2022-11-26"},
+]
+
+app = Flask(__name__)
+
+
+@app.route('/', methods=['GET'])
+def daily_api():
+    return get_daily()
+
+
+def get_daily():
     holiday_content = get_holiday()
     if not holiday_content:
         logger.error(f"节日为空。")
@@ -88,11 +123,35 @@ if __name__ == '__main__':
         tg_content = ''
     else:
         logger.info(f"获取到日记：\n{tg_content}")
-    weather_content = get_weather()
-    if not weather_content:
-        logger.error(f"天气为空。")
-        weather_content = ''
-    else:
-        logger.info(f"获取到天气：\n{weather_content}")
-    complete_content = weather_content + holiday_content + tg_content + '工作再累 一定不要忘记摸鱼哦！有事没事起身去茶水间去厕所去廊道走走，别老在工位上坐着钱是老板的，但命是自己的'
-    logger.info(f"整合内容开始推送：\n{complete_content}")
+    # weather_content = get_weather()
+    # if not weather_content:
+    #     logger.error(f"天气为空。")
+    #     weather_content = ''
+    # else:
+    #     logger.info(f"获取到天气：\n{weather_content}")
+    complete_content = holiday_content + tg_content + '工作再累 一定不要忘记摸鱼哦！有事没事起身去茶水间去厕所去廊道走走，别老在工位上坐着钱是老板的，但命是自己的'
+    return complete_content
+
+
+if __name__ == '__main__':
+    # holiday_content = get_holiday()
+    # if not holiday_content:
+    #     logger.error(f"节日为空。")
+    #     holiday_content = ''
+    # else:
+    #     logger.info(f"获取到节日：\n{holiday_content}")
+    # tg_content = get_tg()
+    # if not tg_content:
+    #     logger.error(f"日记为空。")
+    #     tg_content = ''
+    # else:
+    #     logger.info(f"获取到日记：\n{tg_content}")
+    # weather_content = get_weather()
+    # if not weather_content:
+    #     logger.error(f"天气为空。")
+    #     weather_content = ''
+    # else:
+    #     logger.info(f"获取到天气：\n{weather_content}")
+    # complete_content = weather_content + holiday_content + tg_content + '工作再累 一定不要忘记摸鱼哦！有事没事起身去茶水间去厕所去廊道走走，别老在工位上坐着钱是老板的，但命是自己的'
+    # logger.info(f"整合内容开始推送：\n{complete_content}")
+    app.run(host='0.0.0.0', port=1103, threaded=True)
