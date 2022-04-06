@@ -1,13 +1,37 @@
 import json
 from datetime import datetime
 import requests
-from flask import Flask
+from flask import Flask, jsonify
 from loguru import logger
+import peewee
+from peewee import MySQLDatabase, Model, CharField, TextField, BooleanField, PrimaryKeyField
+from playhouse.shortcuts import model_to_dict
 
 holiday_url = "https://api.apihubs.cn/holiday/get?field=year,month,date,holiday&year=2022&holiday_today=1&holiday_legal=1&order_by=1&cn=1&size=31"
 
+db = MySQLDatabase('daily', host='www.941103.xyz', port=3316, user='j1ang', password='66351579')
 
-def get_holiday():
+
+def create_name(model_class):
+    return '纪念日'
+
+
+class BaseModel(Model):
+    class Meta:
+        database = db
+        table_function = create_name
+
+
+class Date(BaseModel):
+    # 用户名
+    id = PrimaryKeyField()
+    user = CharField()
+    date = TextField()
+    text = TextField()
+    is_lunar = BooleanField(default=False)
+
+
+def get_holiday(name):
     r = requests.get(holiday_url)
     state = json.loads(r.text).get('data').get('list')
 
@@ -17,8 +41,17 @@ def get_holiday():
         result1.append({i.get('holiday_cn'): dt.strftime('%Y-%m-%d')})
 
     holiday_list = result1
+    mine_list = list(Date.select().where(Date.user == name).dicts())
     for i in mine_list:
-        holiday_list.append(i)
+        if i.get('is_lunar') == 1:
+            dt = datetime.strptime(i.get('date'), '%Y-%m-%d')
+            lunar_date = date_conversion(datetime.now().year,
+                                         dt.month, dt.day)
+            holiday_list.append({i.get('text'): lunar_date})
+        else:
+            dt = datetime.strptime(i.get('date'), '%Y-%m-%d')
+            dt.year = datetime.now().year
+            holiday_list.append({i.get('text'): dt.strftime('%Y-%m-%d')})
 
     """
     获取配置中的节日设置
@@ -28,6 +61,7 @@ def get_holiday():
     # 今天日期
     now_str = datetime.now().strftime('%Y-%m-%d')
     now = datetime.strptime(now_str, "%Y-%m-%d")
+    logger.info(holiday_list)
     for holiday_info in holiday_list:
         holiday_name = list(holiday_info.keys())[0]
         holiday_date = holiday_info[holiday_name]
@@ -51,7 +85,12 @@ def get_tg():
         return False
 
 
-# def get_weather():
+# 创建表
+def create_table(table):
+    if not table.table_exists():
+        table.create_table()
+
+
 #     """
 #     获取天气预报
 #     :return: str or false
@@ -105,13 +144,50 @@ mine_list = [
 app = Flask(__name__)
 
 
-@app.route('/', methods=['GET'])
-def daily_api():
-    return get_daily()
+@app.route('/<name>', methods=['GET'])
+def find_api(name=None):
+    if not str(name).endswith("ico"):
+        return get_daily(name)
 
 
-def get_daily():
-    holiday_content = get_holiday()
+def find_name_by_sql(name):
+    return list(Date.select().where(Date.user == name).dicts())
+
+
+@app.route('/add/<name>/<date>/<alias>/<is_lunar>', methods=['GET'])
+def add_api(name=None, date=None, alias=None, is_lunar=None):
+    """
+    :param name: 名字
+    :param date: 日期  YYYY-MM-DD
+    :param alias:  日期对应别名
+    :param is_lunar: 是否是农历
+    :return:
+    """
+    logger.info(f"{name},{date},{alias},{is_lunar}")
+    lunar = True if is_lunar == "1" else False
+    bean = Date(user=name, date=date, text=alias, is_lunar=lunar)
+    bean.save()
+    # p1 = Date.select().where(Date.user == 'j1ang').get()
+    # model_to_dict(p1)
+    p2 = list(Date.select().where(Date.user % '%ang%').dicts())
+    logger.info(str(p2))
+    return jsonify(p2)
+
+
+@app.route('/find/<name>', methods=['GET'])
+def find_by_name_api(name=None, date=None, alias=None, is_lunar=None):
+    res = list(Date.select().where(Date.user == name).dicts())
+    return jsonify(res)
+
+
+@app.route('/favicon.ico')
+def favicon():
+    # 后端返回文件给前端（浏览器），send_static_file是Flask框架自带的函数
+    return "https://cdn.jsdelivr.net/gh/akvsdk/akvsdk.github.io@master/uTools/16367095755421000.png"
+
+
+def get_daily(name):
+    holiday_content = get_holiday(name)
     if not holiday_content:
         logger.error(f"节日为空。")
         holiday_content = ''
@@ -130,6 +206,11 @@ def get_daily():
     # else:
     #     logger.info(f"获取到天气：\n{weather_content}")
     complete_content = holiday_content + tg_content + '工作再累 一定不要忘记摸鱼哦！有事没事起身去茶水间去厕所去廊道走走，别老在工位上坐着钱是老板的，但命是自己的'
+    json = {
+        'time': f"""{holiday_content}""",
+        'tg': tg_content,
+        'c': '工作再累 一定不要忘记摸鱼哦！有事没事起身去茶水间去厕所去廊道走走，别老在工位上坐着钱是老板的，但命是自己的'
+    }
     return complete_content
 
 
@@ -154,4 +235,6 @@ if __name__ == '__main__':
     #     logger.info(f"获取到天气：\n{weather_content}")
     # complete_content = weather_content + holiday_content + tg_content + '工作再累 一定不要忘记摸鱼哦！有事没事起身去茶水间去厕所去廊道走走，别老在工位上坐着钱是老板的，但命是自己的'
     # logger.info(f"整合内容开始推送：\n{complete_content}")
-    app.run(host='0.0.0.0', port=1103, threaded=True)
+    date = Date()
+    create_table(date)
+    app.run(host='0.0.0.0', port=1102, threaded=True)
